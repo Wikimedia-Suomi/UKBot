@@ -314,6 +314,54 @@ class TestWikidataRule(RuleTestCase):
         assert len(contribs) == 1
         assert 5 == contribs[0].points
 
+    def test_label_contribution_returns_points(self):
+        self.site.host = 'www.wikidata.org'
+        self.rev.text = '{"labels": {"fi": {"language": "fi", "value": "Test"}}}'
+        self.rev.parenttext = '{"labels": {}}'
+
+        points_per_label = 5
+        rule = WikidataRule(self.sites, {
+            2: points_per_label,
+            'etiketter': 'fi',
+        }, self.translations)
+
+        contrib = rule.label_contribution(self.rev)
+
+        assert contrib is not None
+        assert contrib.points == points_per_label
+
+    def test_label_contribution_wildcard_returns_points_for_any_language(self):
+        self.site.host = 'www.wikidata.org'
+        self.rev.text = '{"labels": {"sv": {"language": "sv", "value": "Test"}}}'
+        self.rev.parenttext = '{"labels": {}}'
+
+        points_per_label = 5
+        rule = WikidataRule(self.sites, {
+            2: points_per_label,
+            'etiketter': '*',
+        }, self.translations)
+
+        contrib = rule.label_contribution(self.rev)
+
+        assert contrib is not None
+        assert contrib.points == points_per_label
+
+    def test_it_gives_points_for_labels_with_wildcard(self):
+        self.site.host = 'www.wikidata.org'
+        self.rev.text = '{"labels": {"de": {"language": "de", "value": "Test"}}}'
+        self.rev.parenttext = '{"labels": {}}'
+
+        points_per_label = 5
+        rule = WikidataRule(self.sites, {
+            2: points_per_label,
+            'etiketter': '*',
+        }, self.translations)
+
+        contribs = list(rule.test(self.rev))
+
+        assert len(contribs) == 1
+        assert contribs[0].points == points_per_label
+
 
 class TestSectionRule(RuleTestCase):
 
