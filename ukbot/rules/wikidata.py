@@ -25,7 +25,11 @@ class WikidataRule(Rule):
         Rule.__init__(self, sites, params, trans)
 
         self.labels = self.get_param('labels', datatype=list, default=[])
-        self.labels = [re.sub('[^a-z-]', '', x.lower()) for x in self.labels]
+        self.labels_any = '*' in self.labels
+        if self.labels_any:
+            self.labels = []
+        else:
+            self.labels = [re.sub('[^a-z-]', '', x.lower()) for x in self.labels]
 
         self.descriptions = self.get_param('descriptions', datatype=list, default=[])
         self.descriptions = [re.sub('[^a-z-]', '', x.lower()) for x in self.descriptions]
@@ -41,12 +45,20 @@ class WikidataRule(Rule):
         self.all = self.get_param('all', datatype=bool, default=False)
 
         self.matchers = {}
-        for lang in self.labels:
-            self.matchers['label:%s' % lang] = {
-                'rules': [parse('labels.%s' % lang)],
-                'msg': _('label (%(lang)s)'),
-                'opts': {'lang': lang},
+        if self.labels_any:
+            self.matchers['label:*'] = {
+                'rules': [parse('labels.*')],
+                'msg': _('label'),
+                'msg_plural': _('%(count)d labels'),
+                'opts': {},
             }
+        else:
+            for lang in self.labels:
+                self.matchers['label:%s' % lang] = {
+                    'rules': [parse('labels.%s' % lang)],
+                    'msg': _('label (%(lang)s)'),
+                    'opts': {'lang': lang},
+                }
         for lang in self.descriptions:
             self.matchers['description:%s' % lang] = {
                 'rule': [parse('descriptions.%s' % lang)],
@@ -90,6 +102,44 @@ class WikidataRule(Rule):
             out[key] = n
 
         return out
+
+    def label_contribution(self, rev):
+        """Return a contribution for added labels in configured languages.
+
+        The languages to score are configured in the score template via the
+        ``labels`` parameter.  If no matching labels were added, ``None`` is
+        returned.
+        """
+        try:
+            before = json.loads(rev.parenttext or '{}')
+            after = json.loads(rev.text or '{}')
+        except json.decoder.JSONDecodeError:
+            logger.error('Failed to parse Wikidata revision %s' % rev.revid)
+            return None
+
+        before_labels = before.get('labels', {})
+        after_labels = after.get('labels', {})
+
+        report = {}
+        langs = after_labels.keys() if self.labels_any else self.labels
+        for lang in langs:
+            after_label = after_labels.get(lang)
+            before_label = before_labels.get(lang)
+            if after_label and (self.all or not before_label):
+                if not before_label:
+                    report[lang] = 1
+
+        if len(report.keys()) == 0:
+            return None
+
+        points = sum(n * self.points for n in report.values())
+        description = [
+            _('label (%(lang)s)') % {'lang': lang} for lang in report.keys()
+        ]
+
+        return UserContribution(
+            rev=rev, points=points, rule=self, description=', '.join(description)
+        )
 
     @family('wikidata.org')
     def test(self, rev):
