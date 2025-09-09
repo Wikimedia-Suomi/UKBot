@@ -50,6 +50,7 @@ templates:
         site: lloc
         image: imatge
         external_link: enllaç extern
+        contains: contains
         ref: referència
         templateremoval: treure plantilla
         bytebonus: bytebonus

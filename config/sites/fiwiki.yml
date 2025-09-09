@@ -49,6 +49,7 @@ templates:
         site: site
         image: kuva
         external_link: aiheesta muualla
+        contains: contains
         ref: ref
         templateremoval: mallineen poisto
         bytebonus: tavubonus

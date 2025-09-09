@@ -44,6 +44,7 @@ templates:
         site: site
         image: imagen
         external_link: enlace externo
+        contains: contains
         ref: referencia
         templateremoval: eliminarplantilla
         categoryremoval: eliminarcategoría
