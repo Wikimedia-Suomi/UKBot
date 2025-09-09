@@ -129,3 +129,16 @@
   image: python3.11
   schedule: "54 23 * * *"
   emails: onfailure
+# meta-motw2025
+- name: meta-motw2025
+  command: ./jobs/run.sh meta-motw2025
+  image: python3.11
+  schedule: "7 * * * *"
+  emails: onfailure
+  mem: 2Gi
+- name: upload-plot-meta-motw2025
+  command: ./jobs/upload.sh meta-motw2025
+  image: python3.11
+  schedule: "37 23 * * *"
+  emails: onfailure
+  mem: 2Gi

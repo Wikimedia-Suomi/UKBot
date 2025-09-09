@@ -1,0 +1,8 @@
+_extends: enwiki.yml
+homesite: meta.wikimedia.org
+othersites:
+    - '*.wikipedia.org'
+    - www.wikidata.org
+default_prefix: meta
+contestPages:
+    footer: ""

@@ -1,0 +1,5 @@
+_extends: sites/metawiki.yml
+name: Memory of the World Challenge 2025
+pages:
+    base: Memory_of_the_World_challenge_2025
+    default: Memory_of_the_World_challenge_2025/points
