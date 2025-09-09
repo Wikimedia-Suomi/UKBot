@@ -1,11 +1,38 @@
 # encoding=utf-8
 # vim: fenc=utf-8 et sw=4 ts=4 sts=4 ai
 import logging
+from fnmatch import fnmatch
+import requests
 from .common import _, InvalidContestPage
 from .db import db_conn
 from .site import WildcardPage, Site
 
 logger = logging.getLogger(__name__)
+
+
+WIKIMEDIA_API_URL = "https://api.wikimedia.org/w/api.php"
+
+
+def fetch_interwikimap():
+    params = {
+        'action': 'query',
+        'meta': 'siteinfo',
+        'siprop': 'interwikimap',
+        'format': 'json',
+        'formatversion': 2,
+        'iwurl': 1,
+        'wiki': 'metawiki',
+    }
+    headers = {
+        'User-Agent': 'UKBot (https://tools.wmflabs.org/ukbot/)',
+    }
+    resp = requests.get(WIKIMEDIA_API_URL, params=params, headers=headers, timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
+    return {
+        x['prefix']: x['url'].split('//')[1].split('/')[0].split('?')[0]
+        for x in data['query']['interwikimap']
+    }
 
 
 class SiteManager(object):
@@ -96,7 +123,8 @@ def init_sites(config):
 
     assert homesite.logged_in
 
-    iwmap = homesite.interwikimap
+    iwmap = fetch_interwikimap()
+    homesite.interwikimap = iwmap
     prefixes = [''] + [k for k, v in iwmap.items() if v == host]
     homesite.prefixes = prefixes
 
@@ -106,8 +134,19 @@ def init_sites(config):
 
     sites = {homesite.host: homesite}
     if 'othersites' in config:
-        for host in config['othersites']:
-            prefixes = [k for k, v in iwmap.items() if v == host]
-            sites[host] = Site(host, prefixes=prefixes)
+        for pattern in config['othersites']:
+            matched = False
+            for host in set(iwmap.values()):
+                if fnmatch(host, pattern):
+                    matched = True
+                    if host not in sites:
+                        prefixes = [k for k, v in iwmap.items() if v == host]
+                        sites[host] = Site(host, prefixes=prefixes)
+            if not matched:
+                if any(ch in pattern for ch in '*?'):
+                    logger.warning('No othersites matched pattern "%s"', pattern)
+                else:
+                    prefixes = [k for k, v in iwmap.items() if v == pattern]
+                    sites[pattern] = Site(pattern, prefixes=prefixes)
 
     return SiteManager(sites, homesite), sql
