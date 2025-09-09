@@ -13,18 +13,24 @@ class ExternalLinkRule(Rule):
     rule_name = 'external_link'
 
     @staticmethod
-    def count_links(txt):
+    def count_links(txt, contains=None):
         # We don't want to include links in references as these are covered by the RefRule
         txt = re.sub(r'<ref[^>]*>.*?</ref>', '', txt, flags=re.MULTILINE)
-        return len(re.findall(r'(?<!\[)\[[^\[\] ]+ [^\[\]]+\](?!])', txt))
+        links = re.findall(r'(?<!\[)\[([^\[\] ]+) ([^\[\]]+)\](?!\])', txt)
+        if contains:
+            contains = contains.lower()
+            links = [l for l in links if contains in l[0].lower() or contains in l[1].lower()]
+        return len(links)
 
     @family('wikipedia.org', 'wikibooks.org')
     def test(self, rev):
-        links_before = self.count_links(rev.parenttext)
-        links_after = self.count_links(rev.text)
+        contains = self.get_param('contains')
+        links_before = self.count_links(rev.parenttext, contains)
+        links_after = self.count_links(rev.text, contains)
         links_added = links_after - links_before
 
         if links_added > 0:
             points = links_added * self.points
             yield UserContribution(rev=rev, points=points, rule=self,
                                    description=_('links') % {'links': links_added})
+

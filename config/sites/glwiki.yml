@@ -44,6 +44,7 @@ templates:
         site: sitio
         image: imaxe
         external_link: ligazón externa
+        contains: contains
         ref: referencia
         templateremoval: eliminar modelo
         categoryremoval: eliminar categoría

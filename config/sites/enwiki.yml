@@ -48,6 +48,7 @@ templates:
         site: site
         image: image
         external_link: external link
+        contains: contains
         ref: citation
         templateremoval: template removal
         bytebonus: bytebonus

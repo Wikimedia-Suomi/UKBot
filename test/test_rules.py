@@ -7,7 +7,7 @@ from unittest import TestCase
 
 import pytz
 
-from ukbot.rules import RefRule, TemplateRemovalRule, ByteRule, WordRule, NewPageRule, WikidataRule, SectionRule
+from ukbot.rules import RefRule, TemplateRemovalRule, ByteRule, WordRule, NewPageRule, WikidataRule, SectionRule, ExternalLinkRule
 from ukbot.contributions import UserContribution
 import unittest
 
@@ -160,6 +160,31 @@ class TestTemplateRemovalRule(RuleTestCase):
         assert len(rule.templates) == 1
         assert len(contribs) == 1
         assert contribs[0].points == points_per_template * 3
+
+
+class TestExternalLinkRule(RuleTestCase):
+
+    translations = {
+        'contains': 'contains',
+    }
+
+    def test_it_gives_points_for_external_links(self):
+        self.rev.text = 'Hello [http://example.com Example]'
+        self.rev.parenttext = 'Hello'
+        rule = ExternalLinkRule(self.sites, {2: 5}, self.translations)
+        contribs = list(rule.test(self.rev))
+
+        assert len(contribs) == 1
+        assert 5 == contribs[0].points
+
+    def test_it_filters_links_using_contains(self):
+        self.rev.text = 'Hello [http://example.com Example] [http://www.google.com Google]'
+        self.rev.parenttext = 'Hello'
+        rule = ExternalLinkRule(self.sites, {2: 5, 'contains': 'google.com'}, self.translations)
+        contribs = list(rule.test(self.rev))
+
+        assert len(contribs) == 1
+        assert 5 == contribs[0].points
 
 
 class TestRefRule(RuleTestCase):
