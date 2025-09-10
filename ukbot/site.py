@@ -36,7 +36,10 @@ class Site(mwclient.Site):
         logger.debug('Initializing site: %s', host)
         mwclient.Site.__init__(self, host, pool=session, **kwargs)
 
-        res = self.api('query', meta='siteinfo', siprop='magicwords|namespaces|namespacealiases|interwikimap')['query']
+        res = self.api('query', meta='siteinfo',
+                        siprop='general|magicwords|namespaces|namespacealiases|interwikimap')['query']
+
+        self.dbname = res.get('general', {}).get('dbname')
 
         self.file_prefixes = [res['namespaces']['6']['*'], res['namespaces']['6']['canonical']] \
             + [x['*'] for x in res['namespacealiases'] if x['id'] == 6]
