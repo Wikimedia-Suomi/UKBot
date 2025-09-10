@@ -831,9 +831,12 @@ class Contest(object):
             user.add_contribs_from_db(self.sql, self.start, self.end, self.sites.sites)
 
             # Then fill in new contributions from wiki
+            edited_wikis = user.wikis_with_edits()
             for site in self.sites.sites.values():
 
                 # if host_filter is None or site.host == host_filter:
+                if edited_wikis is not None and site.dbname not in edited_wikis:
+                    continue
                 user.add_contribs_from_wiki(site, self.start, self.end, fulltext=True, **extraargs)
 
             # And update db

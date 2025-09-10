@@ -12,6 +12,7 @@ import numpy as np
 from datetime import datetime
 import pytz
 import pymysql
+import requests
 from more_itertools import first
 
 from .contributions import UserContributions
@@ -19,6 +20,7 @@ from .common import _
 from .db import result_iterator
 from .util import unix_time
 from .article import Article
+from .sites import WIKIMEDIA_API_URL
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,31 @@ class User:
                 self.articles[article_key].disqualified = True
 
         return self.articles[article_key]
+
+    def wikis_with_edits(self):
+        if hasattr(self, '_wikis_with_edits'):
+            return self._wikis_with_edits
+        params = {
+            'action': 'query',
+            'meta': 'globaluserinfo',
+            'guiuser': self.name,
+            'guiprop': 'merged',
+            'format': 'json',
+            'formatversion': 2,
+            'wiki': 'metawiki',
+        }
+        headers = {
+            'User-Agent': 'UKBot (https://tools.wmflabs.org/ukbot/)',
+        }
+        try:
+            resp = requests.get(WIKIMEDIA_API_URL, params=params, headers=headers, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            self._wikis_with_edits = {x['wiki'] for x in data['query']['globaluserinfo'].get('merged', [])}
+        except Exception as e:
+            logger.warning('Could not fetch globaluserinfo for %s: %s', self.name, e)
+            self._wikis_with_edits = None
+        return self._wikis_with_edits
 
     def add_contribs_from_wiki(self, site, start, end, fulltext=False, **kwargs):
         """
