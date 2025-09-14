@@ -96,6 +96,11 @@ templates:
                 name: espai de noms
                 params:
                     site: lloc
+            external_links:
+                name: external_links
+                params:
+                    url: url
+                    site: lloc
             sparql:
                 name: sparql  # as in {{ ukb criterion | sparql }}
                 params:

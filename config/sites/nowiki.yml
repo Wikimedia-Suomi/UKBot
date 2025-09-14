@@ -101,6 +101,11 @@ templates:
                 name: navnerom
                 params:
                     site: nettsted
+            external_links:
+                name: external_links
+                params:
+                    url: url
+                    site: nettsted
             sparql:
                 name: sparql  # as in {{ ukb criterion | sparql }}
                 params:

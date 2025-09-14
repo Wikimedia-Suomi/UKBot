@@ -20,7 +20,7 @@ from .rules import NewPageRule, ByteRule, WordRule, RefRule, ImageRule, Template
 from .common import _, STATE_ENDING, STATE_CLOSING, InvalidContestPage
 from .rules import rule_classes
 from .filters import CatFilter, TemplateFilter, NewPageFilter, ExistingPageFilter, ByteFilter, SparqlFilter, \
-    BackLinkFilter, ForwardLinkFilter, NamespaceFilter, PageFilter
+    BackLinkFilter, ExternalLinksFilter, ForwardLinkFilter, NamespaceFilter, PageFilter
 from .db import result_iterator
 from .user import User
 from .util import cleanup_input, unix_time, parse_infobox
@@ -96,6 +96,7 @@ class FilterTemplate(object):
             'category': CatFilter,
             'sparql': SparqlFilter,
             'backlink': BackLinkFilter,
+            'external_links': ExternalLinksFilter,
             'forwardlink': ForwardLinkFilter,
             'namespace': NamespaceFilter,
             'pages': PageFilter,

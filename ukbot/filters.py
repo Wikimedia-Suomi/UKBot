@@ -625,6 +625,53 @@ class BackLinkFilter(Filter):
                         len(self.page_keys))
 
 
+class ExternalLinksFilter(Filter):
+    """Filters articles containing a given external link."""
+
+    @classmethod
+    def make(cls, tpl, cfg, **kwargs):
+        params = {
+            'sites': tpl.sites,
+            'url': tpl.get_param('url'),
+            'site_restrictions': tpl.get_param('site', datatype=list),
+        }
+        return cls(**params)
+
+    def __init__(self, sites, url, site_restrictions=None):
+        """Fetch pages containing the given external link."""
+        Filter.__init__(self, sites)
+        self.url = url
+        self.site_restrictions = site_restrictions
+        logger.info('Initializing ExternalLinksFilter: %s', url)
+
+        for site_key, site_obj in self.sites.items():
+            if self.site_restrictions and site_key not in self.site_restrictions:
+                continue
+
+            params = {
+                'action': 'query',
+                'list': 'exturlusage',
+                'euprop': 'title',
+                'euquery': url,
+                'eulimit': 'max',
+            }
+
+            while True:
+                res = site_obj.api(**params)
+                for entry in res.get('query', {}).get('exturlusage', []):
+                    title = entry.get('title')
+                    link = '%s:%s' % (site_obj.key, title)
+                    self.page_keys.add(link)
+
+                cont = res.get('continue')
+                if cont and 'eucontinue' in cont:
+                    params['eucontinue'] = cont['eucontinue']
+                else:
+                    break
+
+        logger.info('ExternalLinksFilter ready with %d links', len(self.page_keys))
+
+
 class ForwardLinkFilter(Filter):
     """Filters articles linking to <self.links>"""
 
