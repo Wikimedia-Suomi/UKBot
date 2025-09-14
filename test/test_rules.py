@@ -1,7 +1,7 @@
 # encoding=utf-8
 import re
 from datetime import datetime
-import mock
+from unittest import mock
 import json
 from unittest import TestCase
 

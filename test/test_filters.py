@@ -2,32 +2,44 @@
 import re
 from collections import OrderedDict
 import unittest
-from mock import Mock
+from unittest.mock import Mock
 from unittest import TestCase
 
-from faker import Faker
-from mwclient.page import Page
+import itertools
 
-from ukbot.article import Article
-from ukbot.filters import CatFilter
+from ukbot.filters import CatFilter, ExternalLinksFilter
 from ukbot.site import Site
 from ukbot.sites import SiteManager
 
-fake = Faker()
+
+def _name_generator():
+    for i in itertools.count(1):
+        yield f'Name{i}'
+
+
+class _Faker:
+    def __init__(self):
+        self._gen = _name_generator()
+
+    def name(self):
+        return next(self._gen)
+
+
+fake = _Faker()
 
 
 class DummyDataProvider:
 
     def page_mock(self, name=None, site=None, prefix=''):
         """ Create a MWClient Page instance mock """
-        page = Mock(Page)
+        page = Mock()
         page.site = site or self.site
         page.name = '%s%s' % (prefix, name or fake.name())
         return page
 
     def article_mock(self, name=None, site=None):
         """ Create an UKBOt Article instance mock """
-        article = Mock(Article)
+        article = Mock()
         article.site = Mock(return_value=site or self.site)
         article.name = name or fake.name()
         article.key = article.site().key + ':' + article.name
@@ -120,6 +132,31 @@ class TestCatFilter(TestCase):
 
         assert self.filter_and_return_keys(**kwargs(2)) == []
         assert self.filter_and_return_keys(**kwargs(3)) == [dummy.a_key(0)]
+
+
+class TestExternalLinksFilter(TestCase):
+
+    def test_filter(self):
+        dummy = DummyDataProvider(articles=3, categories=0)
+        dummy.articles[0].name = 'Page1'
+        dummy.articles[1].name = 'Page2'
+        dummy.articles[2].name = 'Page3'
+        for article in dummy.articles:
+            article.key = f"{dummy.site.key}:{article.name}"
+        dummy.articles_keyed = OrderedDict((a.key, a) for a in dummy.articles)
+
+        dummy.site.api = Mock(return_value={
+            'query': {
+                'exturlusage': [
+                    {'title': dummy.articles[0].name},
+                    {'title': dummy.articles[2].name},
+                ]
+            }
+        })
+
+        ext_filter = ExternalLinksFilter(sites=dummy.sites, url='https://example.com')
+        filtered = ext_filter.filter(dummy.articles_keyed)
+        assert list(filtered.keys()) == [dummy.articles[0].key, dummy.articles[2].key]
 
 
 if __name__ == '__main__':

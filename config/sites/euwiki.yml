@@ -94,6 +94,11 @@ templates:
                 name: izen-tartea
                 params:
                     site: site
+            external_links:
+                name: external_links
+                params:
+                    url: url
+                    site: site
             sparql:
                 name: sparql  # as in {{ ukb criterion | sparql }}
                 params:
